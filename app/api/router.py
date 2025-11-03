@@ -10,10 +10,31 @@ from app.core.prompt_processor import create_sequence
 
 logger = logging.getLogger(__name__)
 
-ROOT = Path(__file__).parent.parent.parent.resolve()
+# Resolve root directory - try multiple approaches for robustness
+_router_file = Path(__file__)
+ROOT = _router_file.parent.parent.parent.resolve()
+
+# Fallback: try current working directory if relative path fails
+if not (ROOT / "public").exists() and not (ROOT / "app").exists():
+    import os
+    cwd = Path(os.getcwd())
+    if (cwd / "public").exists() or (cwd / "app").exists():
+        ROOT = cwd
+    else:
+        # Try going up from cwd
+        parent_cwd = cwd.parent
+        if (parent_cwd / "public").exists() or (parent_cwd / "app").exists():
+            ROOT = parent_cwd
+
 PUB_DIR = ROOT / "public"
 SHARE_DIR = ROOT / "shared"
 ASSETS_DIR = ROOT / "assets"
+
+# Log paths for debugging
+logger.info(f"ROOT: {ROOT}")
+logger.info(f"PUB_DIR exists: {PUB_DIR.exists()}")
+logger.info(f"SHARE_DIR exists: {SHARE_DIR.exists()}")
+logger.info(f"ASSETS_DIR exists: {ASSETS_DIR.exists()}")
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -56,8 +77,16 @@ def safe_path(base: Path, relative: str) -> Optional[Path]:
 @router.get("/")
 async def serve_index():
     index_path = PUB_DIR / "index.html"
+    if not PUB_DIR.exists():
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Public directory not found. ROOT: {ROOT}, PUB_DIR: {PUB_DIR}, CWD: {Path.cwd()}"
+        )
     if not index_path.exists():
-        raise HTTPException(status_code=404, detail=f"Index file not found at {index_path}")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Index file not found at {index_path}. Files in public dir: {list(PUB_DIR.iterdir()) if PUB_DIR.exists() else 'dir does not exist'}"
+        )
     return FileResponse(
         index_path,
         media_type="text/html; charset=utf-8",
@@ -65,11 +94,17 @@ async def serve_index():
     )
 
 @router.get("/health")
+@router.get("/api/health")
 async def health_check():
+    """Health check endpoint that works even if static files are missing"""
     return {
         "status": "healthy",
         "service": settings.API_TITLE,
-        "version": settings.API_VERSION
+        "version": settings.API_VERSION,
+        "root_dir": str(ROOT),
+        "public_dir": str(PUB_DIR),
+        "public_exists": PUB_DIR.exists(),
+        "cwd": str(Path.cwd())
     }
 
 @router.get("/public/{file_path:path}")
