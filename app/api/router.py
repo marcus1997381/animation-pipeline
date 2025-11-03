@@ -54,6 +54,12 @@ MIME_TYPES = {
 
 router = APIRouter()
 
+# Simple test endpoint that doesn't require any files
+@router.get("/test")
+async def test_endpoint():
+    """Simple test endpoint to verify routing works"""
+    return {"message": "API is working!", "root": str(ROOT)}
+
 def get_content_type(file: Path) -> str:
     ext = file.suffix.lower()
     return MIME_TYPES.get(ext, "application/octet-stream")
