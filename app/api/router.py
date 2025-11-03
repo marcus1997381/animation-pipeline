@@ -30,12 +30,6 @@ PUB_DIR = ROOT / "public"
 SHARE_DIR = ROOT / "shared"
 ASSETS_DIR = ROOT / "assets"
 
-# Log paths for debugging
-logger.info(f"ROOT: {ROOT}")
-logger.info(f"PUB_DIR exists: {PUB_DIR.exists()}")
-logger.info(f"SHARE_DIR exists: {SHARE_DIR.exists()}")
-logger.info(f"ASSETS_DIR exists: {ASSETS_DIR.exists()}")
-
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/cs; charset=utf-8",
@@ -53,12 +47,6 @@ MIME_TYPES = {
 }
 
 router = APIRouter()
-
-# Simple test endpoint that doesn't require any files
-@router.get("/test")
-async def test_endpoint():
-    """Simple test endpoint to verify routing works"""
-    return {"message": "API is working!", "root": str(ROOT)}
 
 def get_content_type(file: Path) -> str:
     ext = file.suffix.lower()
@@ -83,16 +71,8 @@ def safe_path(base: Path, relative: str) -> Optional[Path]:
 @router.get("/")
 async def serve_index():
     index_path = PUB_DIR / "index.html"
-    if not PUB_DIR.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Public directory not found. ROOT: {ROOT}, PUB_DIR: {PUB_DIR}, CWD: {Path.cwd()}"
-        )
     if not index_path.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Index file not found at {index_path}. Files in public dir: {list(PUB_DIR.iterdir()) if PUB_DIR.exists() else 'dir does not exist'}"
-        )
+        raise HTTPException(status_code=404, detail=f"Index file not found at {index_path}")
     return FileResponse(
         index_path,
         media_type="text/html; charset=utf-8",
@@ -100,17 +80,11 @@ async def serve_index():
     )
 
 @router.get("/health")
-@router.get("/api/health")
 async def health_check():
-    """Health check endpoint that works even if static files are missing"""
     return {
         "status": "healthy",
         "service": settings.API_TITLE,
-        "version": settings.API_VERSION,
-        "root_dir": str(ROOT),
-        "public_dir": str(PUB_DIR),
-        "public_exists": PUB_DIR.exists(),
-        "cwd": str(Path.cwd())
+        "version": settings.API_VERSION
     }
 
 @router.get("/public/{file_path:path}")

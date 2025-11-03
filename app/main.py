@@ -30,12 +30,6 @@ def create_application() -> FastAPI:
     # Include routers
     app.include_router(router)
     
-    # Log registered routes for debugging
-    logger.info("Registered routes:")
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            logger.info(f"  {list(route.methods)} {route.path}")
-    
     return app
 
 
