@@ -15,17 +15,9 @@ def create_application() -> FastAPI:
     )
     
     # Configure CORS
-    # Convert CORS_ORIGINS string to list
-    if settings.CORS_ORIGINS == "*":
-        cors_origins = ["*"]
-    elif "," in settings.CORS_ORIGINS:
-        cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
-    else:
-        cors_origins = [settings.CORS_ORIGINS] if settings.CORS_ORIGINS else ["*"]
-    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

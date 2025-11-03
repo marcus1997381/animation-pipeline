@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # CORS Settings
-    CORS_ORIGINS: str = "*"  # Can be comma-separated string or "*"
+    CORS_ORIGINS: list[str] = ["*"]
     
     # OpenAI Settings
     OPENAI_API_KEY: str = ""
